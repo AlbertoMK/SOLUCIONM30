@@ -19,7 +19,95 @@ from src.optimizer import TrafficOptimizer
 
 st.set_page_config(page_title="M-30 Digital Twin", layout="wide")
 
-# ... (CSS preserved) ...
+# --- CUSTOM CSS ---
+st.markdown("""
+<style>
+    .road-container {
+        position: relative;
+        border-radius: 10px;
+        padding: 20px;
+        margin: 10px 0;
+        height: 120px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        border: 2px solid #555;
+        transition: background-color 0.5s ease;
+    }
+    .lane-marking {
+        position: absolute;
+        width: 100%;
+        height: 4px;
+        background: repeating-linear-gradient(90deg, #fff 0px, #fff 40px, transparent 40px, transparent 80px);
+        top: 50%;
+    }
+    .car-overlay {
+        font-size: 2.5em;
+        font-weight: bold;
+        color: white;
+        z-index: 10;
+        text-shadow: 2px 2px 4px #000;
+        background-color: rgba(0,0,0,0.3);
+        padding: 5px 15px;
+        border-radius: 5px;
+    }
+    
+    /* Metrics Layout */
+    .metrics-container {
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        background-color: #1e1e1e;
+        padding: 15px;
+        border-radius: 8px;
+        border: 1px solid #444;
+        margin-top: 5px;
+    }
+    .metric-item {
+        text-align: center;
+    }
+    .metric-label {
+        font-size: 0.9em;
+        color: #aaa;
+        margin-bottom: 5px;
+    }
+    .metric-value {
+        font-size: 1.4em;
+        font-weight: bold;
+        color: white;
+    }
+    
+    /* Speed Sign */
+    .speed-sign {
+        width: 60px;
+        height: 60px;
+        background-color: white;
+        border: 6px solid #cc0000;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        font-weight: bold;
+        color: black;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+    }
+    
+    /* Clock */
+    .digital-clock {
+        text-align: center; 
+        background-color: #000; 
+        color: #0f0; 
+        font-family: 'Courier New', Courier, monospace; 
+        padding: 10px; 
+        border-radius: 10px; 
+        border: 2px solid #555;
+        margin-bottom: 20px;
+        box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+    }
+</style>
+""", unsafe_allow_html=True)
 
 @st.cache_data
 def load_all_data(selected_date):
