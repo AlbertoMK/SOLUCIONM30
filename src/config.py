@@ -17,6 +17,7 @@ DATA_PATH_EXTERNAL = DATA_PATH / "external"
 # M-30 Configuration
 # List of dummy sensor IDs situated in the East Arc of M-30
 M30_EAST_SENSORS = [
+    1001,  # Sample ID found in data
     "PM-30-01", "PM-30-02", "PM-30-03", "PM-30-04", 
     "PM-30-05", "PM-30-06", "PM-30-07", "PM-30-08"
 ]

@@ -17,8 +17,10 @@ def load_csv_data(filepath: Path) -> pd.DataFrame:
         pd.DataFrame: Loaded data as a pandas DataFrame.
     """
     try:
-        df = pd.read_csv(filepath)
-        print(f"Successfully loaded data from {filepath}")
+        # Madrid Open Data uses ';' as delimiter
+        # error_bad_lines is deprecated, using on_bad_lines='skip' for pandas 2.0+ compatibility
+        df = pd.read_csv(filepath, sep=';', on_bad_lines='skip')
+        print(f"Successfully loaded data from {filepath} with shape {df.shape}")
         return df
     except FileNotFoundError:
         print(f"Error: File not found at {filepath}")
