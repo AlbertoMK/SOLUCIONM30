@@ -12,8 +12,8 @@ class DataPreprocessor:
     Class to handle preprocessing of traffic data.
     """
     
-    def __init__(self):
-        self.sensor_ids = M30_EAST_SENSORS
+    def __init__(self, sensor_ids=None):
+        self.sensor_ids = sensor_ids
 
     def clean_data(self, df: pd.DataFrame) -> pd.DataFrame:
         """
@@ -28,15 +28,13 @@ class DataPreprocessor:
         if df.empty:
             return df
 
-        # 1. Filter by Sensor ID
-        # Ensure ID column type matches config (handling string/int mismatch)
-        # We try to convert both to string for robust comparison or keep mixed if needed.
-        # Given our config has mixed types (int and str), let's ensure we match correctly.
-        # For now, we assume the raw data IDs might be ints or strs.
-        
-        valid_ids = set(self.sensor_ids)
-        mask = df['id'].isin(valid_ids)
-        df_clean = df[mask].copy()
+        # 1. Filter by Sensor ID (if specified)
+        if self.sensor_ids is not None:
+            valid_ids = set(self.sensor_ids)
+            mask = df['id'].isin(valid_ids)
+            df_clean = df[mask].copy()
+        else:
+            df_clean = df.copy()
         
         # 2. Parse Dates
         # Format in csv: "YYYY-MM-DD HH:MM:SS"

@@ -11,7 +11,7 @@ import plotly.graph_objects as go
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.append(str(BASE_DIR))
 
-from src.data_loader import load_csv_data
+from src.data_loader import load_csv_data, load_metadata
 from src.preprocessor import DataPreprocessor
 from src.config import DATA_PATH_RAW, M30_EAST_SENSORS
 from src.physics import TrafficPhysics
@@ -112,19 +112,24 @@ st.markdown("""
 st.title("🚇 M-30 Traffic Simulation (Digital Twin)")
 
 @st.cache_data
-def load_and_process_data(file_name="01-2019.csv"):
-    # In a real app, logic to map date to filename would be here
+def load_all_data(file_name="01-2019.csv"):
+    # 1. Traffic Data
     file_path = DATA_PATH_RAW / "trafico" / "01-2019" / file_name
+    # 2. Metadata (Map)
+    meta_path = DATA_PATH_RAW / "meta" / "pmed_ubicacion_10_2018.csv"
     
     with st.spinner(f"Loading data..."):
         if not file_path.exists():
-            return pd.DataFrame() # Handle missing files
+            return pd.DataFrame(), pd.DataFrame()
+        
         df = load_csv_data(file_path)
+        meta_df = load_metadata(meta_path)
     
     preprocessor = DataPreprocessor()
     df_clean = preprocessor.clean_data(df)
     df_features = preprocessor.create_features(df_clean)
-    return df_features
+    
+    return df_features, meta_df
 
 def get_road_color(speed):
     # Map speed (0-90) to Red-Green
@@ -150,24 +155,92 @@ def get_road_color(speed):
 # --- SESSION STATE ---
 if 'simulation_running' not in st.session_state:
     st.session_state.simulation_running = False
+if 'selected_sensor' not in st.session_state:
+    st.session_state.selected_sensor = None
 
-# --- CONTROLS SIDEBAR ---
+# --- LOAD DATA ---
+# 1. Day Selection (Before loading data to potentially filter file loading in future)
+# Moved Day Selection to Sidebar start, but we need data for map first.
+# Let's keep logic: Load default -> Show Map -> User selects -> Filter.
+
 st.sidebar.header("🕹️ Simulation Controls")
-
-# 1. Day Selection
 selected_date = st.sidebar.date_input("📅 Date to Analyze", value=pd.to_datetime("2019-01-01"))
-# For this demo, we assume we only have JAN 2019 loaded. 
-# We'll map any date to our sample file for demonstration consistency.
 demo_file = "01-2019.csv" 
 
-# 2. Sensor Selection
-df_raw = load_and_process_data(demo_file)
+df_raw, df_meta = load_all_data(demo_file)
+
 if df_raw.empty:
     st.error("Data not found.")
     st.stop()
 
-available_sensors = sorted(df_raw['id'].unique())
-selected_sensor = st.sidebar.selectbox("📍 Sensor Location", options=available_sensors)
+# --- MAP VISUALIZATION & SELECTION ---
+st.markdown("### 🗺️ Select Sensor from Map")
+
+# Filter metadata to only include sensors present in raw data
+valid_sensors = df_raw['id'].unique()
+map_data = df_meta[df_meta['id'].isin(valid_sensors)].copy()
+
+# Define Color and Size based on selection
+map_data['color'] = 'blue'
+map_data['size'] = 10
+if st.session_state.selected_sensor:
+    mask = map_data['id'] == st.session_state.selected_sensor
+    map_data.loc[mask, 'color'] = 'red'
+    map_data.loc[mask, 'size'] = 20
+
+# Add hover info
+if not map_data.empty:
+    fig_map = px.scatter_mapbox(
+        map_data, 
+        lat="latitud", 
+        lon="longitud", 
+        hover_name="nombre",
+        hover_data=["id", "distrito"],
+        zoom=11, 
+        height=350,
+        color="color",
+        size="size",
+        color_discrete_map={'blue': '#3498db', 'red': '#e74c3c'},
+        size_max=20
+    )
+    fig_map.update_layout(
+        mapbox_style="open-street-map",
+        margin={"r":0,"t":0,"l":0,"b":0},
+        showlegend=False
+    )
+    # fig_map.update_traces(marker=dict(size=12, color='blue')) # Removed in favor of dynamic size/color
+    
+    # Enable Selection (Streamlit 1.37+)
+    selection = st.plotly_chart(fig_map, on_select="rerun", use_container_width=True)
+    
+    # Handle Selection Event
+    if selection and selection['selection']['points']:
+        point_idx = selection['selection']['points'][0]['point_index']
+        # The chart might resort data, but px usually keeps order if not aggregating? 
+        # Safest to use custom data, but let's assume index matches for now 
+        # or better: rely on the filtering we did.
+        # Actually, clicking a point returns the index inthe dataframe passed to plotly.
+        # Since we pass map_data, point_index 0 refers to map_data.iloc[0].
+        sensor_id_selected = map_data.iloc[point_idx]['id']
+        
+        # Only update if changed to avoid loop
+        if st.session_state.selected_sensor != sensor_id_selected:
+            st.session_state.selected_sensor = sensor_id_selected
+            st.rerun()
+
+# Fallback if no map selection or first run
+available_sensors = sorted(valid_sensors)
+default_idx = 0
+if st.session_state.selected_sensor in available_sensors:
+    default_idx = available_sensors.index(st.session_state.selected_sensor)
+
+# --- CONTROLS SIDEBAR ---
+# 2. Sensor Selection
+selected_sensor = st.sidebar.selectbox("📍 Sensor Location", options=available_sensors, index=default_idx)
+
+# Sync Sidebar -> Session State (if changed manually)
+if selected_sensor != st.session_state.selected_sensor:
+    st.session_state.selected_sensor = selected_sensor
 
 # Process Data for Sensor
 sensor_data = df_raw[df_raw['id'] == selected_sensor].copy()
