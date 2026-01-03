@@ -4,6 +4,7 @@ Processing pipeline execution.
 """
 import sys
 from pathlib import Path
+import pandas as pd
 
 # Add project root to path
 BASE_DIR = Path(__file__).resolve().parent
@@ -11,7 +12,7 @@ sys.path.append(str(BASE_DIR))
 
 from src.data_loader import load_csv_data
 from src.preprocessor import DataPreprocessor
-from src.config import DATA_PATH_RAW, M30_EAST_SENSORS
+from src.config import DATA_PATH_RAW, DATA_PATH_PROCESSED, M30_EAST_SENSORS
 from src.physics import TrafficPhysics
 from src.optimizer import TrafficOptimizer
 
@@ -29,6 +30,12 @@ def main():
 
     print(f"📥 Loading data from: {sample_file.name}...")
     df = load_csv_data(sample_file)
+    
+    # Load Limits
+    limits_file = DATA_PATH_PROCESSED / "realvlimit" / "sensor_limits.csv"
+    limits_df = pd.DataFrame()
+    if limits_file.exists():
+        limits_df = pd.read_csv(limits_file)
     
     # 2. Preprocess
     print("🧹 Cleaning and Feature Engineering...")
@@ -49,16 +56,29 @@ def main():
     sensor_id = df_features['id'].iloc[0]
     sensor_data = df_features[df_features['id'] == sensor_id].copy()
     
-    k_crit = TrafficPhysics.calculate_critical_density(sensor_data)
-    print(f"   - Detected Critical Density for {sensor_id}: {k_crit:.2f} veh/km")
+    # Determine base limit
+    base_limit = 90
+    if not limits_df.empty:
+        l_row = limits_df[limits_df['id'] == sensor_id]
+        if not l_row.empty:
+            base_limit = int(l_row.iloc[0]['inferred_limit'])
     
-    optimizer = TrafficOptimizer(critical_density_override=k_crit)
+    k_crit = TrafficPhysics.calculate_critical_density(sensor_data)
+    q_max = TrafficPhysics.calculate_max_capacity(sensor_data)
+    
+    print(f"   - Detected Critical Density for {sensor_id}: {k_crit:.2f} veh/km")
+    print(f"   - Detected Max Capacity (Q_max) for {sensor_id}: {q_max:.0f} veh/h")
+    print(f"   - Detected Base Speed Limit for {sensor_id}: {base_limit} km/h")
+    
+    optimizer = TrafficOptimizer(critical_density_override=k_crit, 
+                                 max_capacity_override=q_max,
+                                 base_speed_limit=base_limit)
     df_opt = optimizer.optimize_traffic(sensor_data)
     
     # Stats
-    n_optimized = df_opt[df_opt['optimal_speed_limit'] < 90].shape[0]
+    n_optimized = df_opt[df_opt['limite_dinamico'] < base_limit].shape[0]
     avg_speed_real = df_opt['vmed'].mean()
-    avg_speed_sim = df_opt['simulated_speed'].mean()
+    avg_speed_sim = df_opt['velocidad_opt'].mean()
     
     print(f"   - Time intervals with active VSL (70km/h): {n_optimized} / {len(df_opt)}")
     print(f"   - Average Speed (Real): {avg_speed_real:.2f} km/h")

@@ -61,7 +61,30 @@ class TrafficPhysics:
             return float(critical_density)
         except Exception as e:
             print(f"Error calculating critical density: {e}")
+            print(f"Error calculating critical density: {e}")
             return 45.0 # Conservative default
+
+    @staticmethod
+    def calculate_max_capacity(df: pd.DataFrame) -> float:
+        """
+        Calculates Maximum Capacity (Q_max) of the road section.
+        Suggested: 99th percentile of historical intensity.
+        
+        Args:
+            df (pd.DataFrame): Data with 'intensidad'.
+            
+        Returns:
+            float: Max capacity in veh/h.
+        """
+        try:
+            if 'intensidad' not in df.columns:
+                return 4000.0
+            
+            # Use 99th percentile to filter out sensor errors/spikes
+            q_max = df['intensidad'].quantile(0.99)
+            return float(q_max)
+        except Exception:
+            return 4000.0 # Default for M-30 (3-4 lanes)
 
     @staticmethod
     def get_fundamental_diagram(df: pd.DataFrame) -> pd.DataFrame:

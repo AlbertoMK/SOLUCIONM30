@@ -286,10 +286,14 @@ if not df_limits.empty:
         real_limit_val = int(limit_row.iloc[0]['inferred_limit'])
 
 k_crit = TrafficPhysics.calculate_critical_density(sensor_data)
-optimizer = TrafficOptimizer(critical_density_override=k_crit)
+q_max = TrafficPhysics.calculate_max_capacity(sensor_data)
+optimizer = TrafficOptimizer(critical_density_override=k_crit, max_capacity_override=q_max, base_speed_limit=real_limit_val)
 df_opt = optimizer.optimize_traffic(sensor_data)
+
+# Use optimized intensity if available, else real
+intensity_col = 'intensidad_opt' if 'intensidad_opt' in df_opt.columns else 'intensidad'
 df_opt['simulated_density'] = df_opt.apply(
-    lambda row: row['intensidad'] / row['simulated_speed'] if row['simulated_speed'] > 0 else 0, axis=1
+    lambda row: row[intensity_col] / row['simulated_speed'] if row['simulated_speed'] > 0 else 0, axis=1
 )
 
 st.sidebar.markdown("---")
