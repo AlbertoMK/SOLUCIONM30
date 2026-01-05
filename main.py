@@ -41,6 +41,13 @@ def main():
     print("🧹 Cleaning and Feature Engineering...")
     preprocessor = DataPreprocessor()
     df_clean = preprocessor.clean_data(df)
+    
+    # Show Quality Report
+    quality = preprocessor.get_quality_report()
+    print("📊 Data Quality Report:")
+    for k, v in quality.items():
+        print(f"   - {k}: {v}")
+
     df_features = preprocessor.create_features(df_clean)
     
     if df_features.empty:
