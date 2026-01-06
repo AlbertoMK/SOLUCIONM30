@@ -6,15 +6,18 @@ venv/
 .env
 
 # --- DATOS ---
-data/raw/*
-data/processed/*
-data/external/*
+# 1. Ignoramos todo el contenido de las carpetas de datos
+data/raw/**/*
+data/processed/**/*
+data/external/**/*
 
-# Excepción: ¡No ignorar el archivo .gitkeep!
-# Esto sirve para que Git suba las carpetas vacías para que otros vean la estructura
-!data/raw/.gitkeep
-!data/processed/.gitkeep
-!data/external/.gitkeep
+# 2. Permitimos que Git rastree las carpetas
+!data/raw/**/
+!data/processed/**/
+!data/external/**/
+
+# 3. Permitimos los archivos .gitkeep
+!**/.gitkeep
 
 # --- IDEs ---
 .vscode/

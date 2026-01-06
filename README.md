@@ -25,22 +25,13 @@ pip install -r requirements.txt
 
 ## 📂 3. Preparación de los Datos
 
-Para que el programa funcione, necesitas colocar los datos históricos en las carpetas correctas. El sistema es muy estricto con esto.
-
-### A. Crear la estructura de carpetas
-Ejecuta estos comandos en tu terminal para crear las carpetas necesarias:
-
-```powershell
-mkdir data\raw\trafico\01-2019
-mkdir data\raw\meta
-```
-
-### B. Colocar los archivos
+### Colocar los archivos
 Debes copiar tus archivos CSV (que obtienes del portal de datos de Madrid) manualmente en estas carpetas:
 
 1.  **Datos de Tráfico (Mes Enero 2019):**
     *   Coge tu archivo CSV de tráfico.
     *   Renómbralo a **`01-2019.csv`**.
+    *   Crea la carpeta `01-2019 en data\raw\trafico`
     *   Mételo en: `data\raw\trafico\01-2019\`
 
 2.  **Metadatos (Ubicación de Sensores):**
